@@ -34,9 +34,7 @@ public class InvoiceService implements IInvoiceService {
         session.setAttribute(INVOICE_LIST, invoices);
         System.out.println("Lista de facturas después de guardar: " + session.getAttribute(INVOICE_LIST));
 
-
-        // Asegurarse de que la lista está actualizada correctamente
-        return invoice; // Retornar la factura actualizada para mayor claridad
+        return invoice; // Retornar la factura actualizada
     }
     @Override
     public Invoice buscarFacturaPorNumero(Integer numeroFactura, HttpSession session) {
@@ -50,18 +48,23 @@ public class InvoiceService implements IInvoiceService {
     @Override
     public void guardarFactura(Invoice invoice, HttpSession session) {
         List<Invoice> invoices = listarFacturas(session);
+
+        // Asegurarse de que invoices no sea null
+        if (invoices == null) {
+            invoices = new ArrayList<>(); // Inicializa la lista si es null
+        }
+
         // Verificar si la factura ya existe en la lista
-        boolean exists = invoices.stream().anyMatch(inv -> inv.getNumeroFactura() == invoice.getNumeroFactura());
+        boolean exists = invoices.stream()
+                .anyMatch(inv -> inv.getNumeroFactura() != null && inv.getNumeroFactura().equals(invoice.getNumeroFactura()));
 
         if (!exists) {
             invoices.add(invoice);
+            session.setAttribute(INVOICE_LIST, invoices); // Actualizar la sesión solo si se añade la factura
         } else {
-
-            // Opcional: Manejar el caso en que la factura ya existe
-            // Puedes lanzar una excepción o simplemente registrar un mensaje de error.
-            System.out.println("Factura con el número " + invoice.getNumeroFactura() + " ya existe.");
+            // Lanzar una excepción si la factura ya existe
+            throw new IllegalArgumentException("Factura con el número " + invoice.getNumeroFactura() + " ya existe.");
         }
-            session.setAttribute(INVOICE_LIST, invoices);
     }
 
 

@@ -32,32 +32,23 @@ public class InvoiceController {
 
     @PostMapping("guardar") // Nueva acción para guardar la factura
     public String guardarFactura(@ModelAttribute("invoice")  Invoice invoice, BindingResult result, Model model, HttpSession session) {
-        // Validación básica
-        if (invoice.getNumeroFactura() == 0 || invoice.getConcepto() == null || invoice.getCantidad() <= 0 || result.hasErrors()) {
-            model.addAttribute("error", "Por favor, completa todos los campos correctamente.");
+
+        // Validar la factura
+        if (!validarFactura(invoice, result, model, "index")) {
             return "index"; // Retorna al formulario si hay error
         }
-        // Validación adicional para los valores numéricos
-        if (invoice.getNumeroFactura() == null || invoice.getNumeroFactura() <= 0) {
-            model.addAttribute("error", "El número de factura debe ser un número mayor que 0.");
-            return "index"; // Retorna al formulario si hay errores
+
+        try {
+            // Guardar la factura en la sesión
+            invoiceService.guardarFactura(invoice, session);
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("error", e.getMessage()); // Añadir el mensaje de error al modelo
+            return "index"; // Retorna al formulario con el error
         }
-        if (invoice.getConcepto() == null || invoice.getConcepto().trim().isEmpty()) {
-            model.addAttribute("error", "El concepto es obligatorio.");
-            return "index"; // Retorna al formulario si hay errores
-        }
-        if (invoice.getCantidad() == null || invoice.getCantidad() <= 0) {
-            model.addAttribute("error", "La cantidad debe ser un número mayor que 0.");
-            return "index"; // Retorna al formulario si hay errores
-        }
-        if (invoice.getPorcentajeRetencion() == null || invoice.getPorcentajeRetencion() < 0) {
-            model.addAttribute("error", "El porcentaje de retención no puede ser negativo.");
-            return "index"; // Retorna al formulario si hay errores
-        }
+        //Cálculos
         double retencion = (invoice.getCantidad() * invoice.getPorcentajeRetencion()) / 100;
         double totalConRetencion = invoice.getCantidad() - retencion;
-        // Guardar la factura en la sesión
-        invoiceService.guardarFactura(invoice, session);
+
         // Añadir datos a la vista
         model.addAttribute("numeroFactura", invoice.getNumeroFactura());
         model.addAttribute("concepto", invoice.getConcepto());
@@ -83,27 +74,9 @@ public class InvoiceController {
 
         // Buscar la factura y actualizarla con los datos enviados desde el formulario
         invoiceService.editarFactura(invoice, session);
-        // Validación básica
-        if (invoice.getNumeroFactura() == 0 || invoice.getConcepto() == null || invoice.getCantidad() <= 0 || result.hasErrors()) {
-            model.addAttribute("error", "Por favor, completa todos los campos correctamente.");
+        // Validar la factura
+        if (!validarFactura(invoice, result, model, "index")) {
             return "editar"; // Retorna al formulario si hay error
-        }
-        // Validación adicional para los valores numéricos
-        if (invoice.getNumeroFactura() == null || invoice.getNumeroFactura() <= 0) {
-            model.addAttribute("error", "El número de factura debe ser un número mayor que 0.");
-            return "editar"; // Retorna al formulario si hay errores
-        }
-        if (invoice.getConcepto() == null || invoice.getConcepto().trim().isEmpty()) {
-            model.addAttribute("error", "El concepto es obligatorio.");
-            return "editar"; // Retorna al formulario si hay errores
-        }
-        if (invoice.getCantidad() == null || invoice.getCantidad() <= 0) {
-            model.addAttribute("error", "La cantidad debe ser un número mayor que 0.");
-            return "editar"; // Retorna al formulario si hay errores
-        }
-        if (invoice.getPorcentajeRetencion() == null || invoice.getPorcentajeRetencion() < 0) {
-            model.addAttribute("error", "El porcentaje de retención no puede ser negativo.");
-            return "editar"; // Retorna al formulario si hay errores
         }
         model.addAttribute("mensaje", "Factura actualizada con éxito");
         return "editar"; // Redirige a resumen
@@ -176,4 +149,33 @@ public class InvoiceController {
         // Redirigir al resumen después de eliminar
         return mostrarResumen(model, session);
     }
+
+    private boolean validarFactura(Invoice invoice, BindingResult result, Model model, String pagina) {
+        // Verificar errores de validación iniciales
+        if (result.hasErrors()) {
+            model.addAttribute("error", "Por favor, completa todos los campos correctamente.");
+            return false; // Retorna false si hay errores
+        }
+
+        // Validaciones adicionales
+        if (invoice.getNumeroFactura() == null || invoice.getNumeroFactura() <= 0) {
+            model.addAttribute("error", "El número de factura debe ser un número mayor que 0.");
+            return false; // Retorna false si hay errores
+        }
+        if (invoice.getConcepto() == null || invoice.getConcepto().trim().isEmpty()) {
+            model.addAttribute("error", "El concepto es obligatorio.");
+            return false; // Retorna false si hay errores
+        }
+        if (invoice.getCantidad() == null || invoice.getCantidad() <= 0) {
+            model.addAttribute("error", "La cantidad debe ser un número mayor que 0.");
+            return false; // Retorna false si hay errores
+        }
+        if (invoice.getPorcentajeRetencion() == null || invoice.getPorcentajeRetencion() < 0) {
+            model.addAttribute("error", "El porcentaje de retención no puede ser negativo.");
+            return false; // Retorna false si hay errores
+        }
+
+        return true; // Retorna true si todas las validaciones son exitosas
+    }
+
 }

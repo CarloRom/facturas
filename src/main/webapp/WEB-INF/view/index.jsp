@@ -8,6 +8,12 @@
 </head>
 <body>
 <h2>Crear Factura</h2>
+
+<%-- Mostrar mensaje de error si existe --%>
+<c:if test="${not empty error}">
+    <div style="color: red;">${error}</div>
+</c:if>
+
 <form:form modelAttribute="invoice" action="guardar" method="post">
     <table>
         <tr>
